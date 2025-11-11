@@ -159,7 +159,7 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
 
             // Category Dropdown
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
+              initialValue: _selectedCategory,
               decoration: InputDecoration(
                 labelText: 'Category',
                 prefixIcon: const Icon(Icons.category),
@@ -211,7 +211,7 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
                 Expanded(
                   flex: 1,
                   child: DropdownButtonFormField<String>(
-                    value: _selectedUnit,
+                    initialValue: _selectedUnit,
                     decoration: InputDecoration(
                       labelText: 'Unit',
                       border: OutlineInputBorder(

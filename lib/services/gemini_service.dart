@@ -105,7 +105,7 @@ Important rules:
       return jsonList.map((json) {
         final shelfLifeDays = json['shelf_life_days'] ?? 7;
         return GroceryItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString() + '_' + json['name'].toString().hashCode.toString(),
+          id: '${DateTime.now().millisecondsSinceEpoch}_${json['name'].toString().hashCode}',
           name: json['name'] ?? 'Unknown Item',
           category: json['category'] ?? 'Other',
           quantity: (json['quantity'] ?? 1.0).toDouble(),
