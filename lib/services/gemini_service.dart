@@ -7,7 +7,7 @@ import '../models/grocery_item.dart';
 /// Service for using Google Gemini AI to parse receipt images
 class GeminiService {
   
-  static const String _apiKey = 'ADD_YOUR_GEMINI_API_KEY_HERE'; 
+  static const String _apiKey = 'AIzaSyCWgW2eZwL8za2kmfL2zrl7aw1E2ZcfJ9U'; 
   
   late final GenerativeModel _model;
 
