@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       log('Starting sign in process for: $email');
-      
+
       // Attempt to sign in with Firebase
       final success = await AuthService.signIn(
         email: email,
@@ -57,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (success) {
         log('Sign in successful, navigating to home screen');
-        
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -78,9 +78,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e, st) {
       log('Sign in error: $e\n$st');
-      
+
       if (!mounted) return;
-      
+
       // Extract user-friendly error message
       String errorMessage = e.toString().replaceFirst('Exception: ', '');
       _showErrorSnackBar(errorMessage);
@@ -116,10 +116,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (created == true) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('✓ Account created successfully! Please sign in.'),
+          content: const Text(
+            '✓ Account created successfully! Please sign in.',
+          ),
           backgroundColor: kPrimaryGreen,
           duration: const Duration(seconds: 3),
         ),
@@ -180,7 +182,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 56,
                         child: Center(
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(kPrimaryGreen),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              kPrimaryGreen,
+                            ),
                           ),
                         ),
                       )
@@ -226,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
 
                 const SizedBox(height: 30),
-                
+
                 // Information text
                 Center(
                   child: Text(
@@ -317,7 +321,9 @@ class _LoginScreenState extends State<LoginScreen> {
             prefixIcon: const Icon(Icons.lock_outline, color: kPrimaryGreen),
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
                 color: kPrimaryGreen,
               ),
               onPressed: () {
@@ -343,7 +349,10 @@ class _LoginScreenState extends State<LoginScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.red, width: 2.0),
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 10.0),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 16.0,
+              horizontal: 10.0,
+            ),
           ),
         ),
       ],
@@ -393,4 +402,15 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors<span class="cursor">█</span>
+              borderSide: const BorderSide(color: Colors.red, width: 2.0),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 16.0,
+              horizontal: 10.0,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
