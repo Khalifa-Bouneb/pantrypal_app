@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/inventory_item.dart';
 import '../services/api_service.dart';
+import 'home_screen.dart' show AppTheme;
 
 /// Screen for scanning product barcodes and QR codes
 class BarcodeScannerScreen extends StatefulWidget {
   final Function(List<InventoryItem>) onItemsAdded;
 
-  const BarcodeScannerScreen({
-    super.key,
-    required this.onItemsAdded,
-  });
+  const BarcodeScannerScreen({super.key, required this.onItemsAdded});
 
   @override
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
@@ -54,20 +52,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         final inventoryItem = InventoryItem.fromGroceryItem(item);
         widget.onItemsAdded([inventoryItem]);
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added ${item.name} to your pantry!'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-
-        // Go back after a short delay
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          Navigator.pop(context);
-        }
+        // Handled by parent callback
       } else {
         // Product not found
         if (mounted) {
@@ -82,10 +67,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -93,6 +75,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         setState(() {
           _isProcessing = false;
         });
+        // Reset last scanned after delay if we assume they might want to scan same item again?
+        // Or keep it to prevent spam.
       }
     }
   }
@@ -100,13 +84,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black, // Camera background
       body: Stack(
         children: [
           // Camera view
-          MobileScanner(
-            controller: _controller,
-            onDetect: _handleBarcode,
-          ),
+          MobileScanner(controller: _controller, onDetect: _handleBarcode),
 
           // Top gradient overlay with title
           Positioned(
@@ -118,30 +100,37 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.transparent,
-                  ],
+                  colors: [Colors.black.withOpacity(0.7), Colors.transparent],
                 ),
               ),
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Scan Barcode',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      const Expanded(
+                        child: Center(
+                          child: Text(
+                            'Scan Barcode',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 48), // Balance spacing
                     ],
                   ),
                 ),
@@ -151,16 +140,18 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
           // Center scanning guide
           Center(
-            child: Container(
-              width: 300,
-              height: 200,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white, width: 2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: CustomPaint(
-                painter: _ScannerOverlayPainter(),
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 280,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: CustomPaint(painter: _ScannerOverlayPainter()),
+                ),
+              ],
             ),
           ),
 
@@ -170,64 +161,62 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             left: 0,
             right: 0,
             child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.transparent,
-                  ],
+                  colors: [Colors.black.withOpacity(0.9), Colors.transparent],
                 ),
               ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isProcessing)
-                        const CircularProgressIndicator(color: Colors.white)
-                      else
-                        const Icon(
-                          Icons.qr_code_scanner,
-                          color: Colors.white,
-                          size: 48,
-                        ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _isProcessing
-                            ? 'Looking up product...'
-                            : 'Point camera at barcode or QR code',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isProcessing)
+                    const CircularProgressIndicator(color: AppTheme.primary)
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        shape: BoxShape.circle,
                       ),
-                    ],
+                      child: const Icon(
+                        Icons.qr_code_scanner_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _isProcessing
+                        ? 'Looking up product...'
+                        : 'Point camera at barcode or QR code',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-
-          // Torch toggle button
-          Positioned(
-            right: 16,
-            bottom: 120,
-            child: FloatingActionButton(
-              backgroundColor: Colors.white.withOpacity(0.9),
-              onPressed: () => _controller.toggleTorch(),
-              child: ValueListenableBuilder(
-                valueListenable: _controller.torchState,
-                builder: (context, state, child) {
-                  return Icon(
-                    state == TorchState.off ? Icons.flash_off : Icons.flash_on,
-                    color: Colors.blue[700],
-                  );
-                },
+                  const SizedBox(height: 30),
+                  FloatingActionButton.small(
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    elevation: 0,
+                    onPressed: () => _controller.toggleTorch(),
+                    child: ValueListenableBuilder(
+                      valueListenable: _controller.torchState,
+                      builder: (context, state, child) {
+                        return Icon(
+                          state == TorchState.off
+                              ? Icons.flash_off_rounded
+                              : Icons.flash_on_rounded,
+                          color: Colors.white,
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -242,27 +231,53 @@ class _ScannerOverlayPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.blue
-      ..strokeWidth = 4
+      ..color = AppTheme
+          .primary // Emerald Green
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    const cornerLength = 30.0;
+    const cornerLength = 40.0;
 
     // Top-left corner
     canvas.drawLine(const Offset(0, 0), const Offset(cornerLength, 0), paint);
     canvas.drawLine(const Offset(0, 0), const Offset(0, cornerLength), paint);
 
     // Top-right corner
-    canvas.drawLine(Offset(size.width, 0), Offset(size.width - cornerLength, 0), paint);
-    canvas.drawLine(Offset(size.width, 0), Offset(size.width, cornerLength), paint);
+    canvas.drawLine(
+      Offset(size.width, 0),
+      Offset(size.width - cornerLength, 0),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width, 0),
+      Offset(size.width, cornerLength),
+      paint,
+    );
 
     // Bottom-left corner
-    canvas.drawLine(Offset(0, size.height), Offset(cornerLength, size.height), paint);
-    canvas.drawLine(Offset(0, size.height), Offset(0, size.height - cornerLength), paint);
+    canvas.drawLine(
+      Offset(0, size.height),
+      Offset(cornerLength, size.height),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(0, size.height),
+      Offset(0, size.height - cornerLength),
+      paint,
+    );
 
     // Bottom-right corner
-    canvas.drawLine(Offset(size.width, size.height), Offset(size.width - cornerLength, size.height), paint);
-    canvas.drawLine(Offset(size.width, size.height), Offset(size.width, size.height - cornerLength), paint);
+    canvas.drawLine(
+      Offset(size.width, size.height),
+      Offset(size.width - cornerLength, size.height),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width, size.height),
+      Offset(size.width, size.height - cornerLength),
+      paint,
+    );
   }
 
   @override
