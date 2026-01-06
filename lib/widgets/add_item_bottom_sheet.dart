@@ -59,14 +59,15 @@ class AddItemBottomSheet extends StatelessWidget {
               color: Colors.green,
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ReceiptScannerScreen(
-                      onItemsAdded: onItemsAdded,
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ReceiptScannerScreen(
+                        onItemsAdded: onItemsAdded,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                });
               },
             ),
 
@@ -81,14 +82,15 @@ class AddItemBottomSheet extends StatelessWidget {
               color: Colors.blue,
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BarcodeScannerScreen(
-                      onItemsAdded: onItemsAdded,
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => BarcodeScannerScreen(
+                        onItemsAdded: onItemsAdded,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                });
               },
             ),
 
@@ -103,14 +105,15 @@ class AddItemBottomSheet extends StatelessWidget {
               color: Colors.orange,
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ManualAddScreen(
-                      onItemsAdded: onItemsAdded,
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ManualAddScreen(
+                        onItemsAdded: onItemsAdded,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                });
               },
             ),
 

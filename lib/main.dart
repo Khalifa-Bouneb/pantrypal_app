@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const PantryPalApp());
 }
 
@@ -13,11 +20,8 @@ class PantryPalApp extends StatelessWidget {
     return MaterialApp(
       title: 'PantryPal',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
+      theme: ThemeData(primarySwatch: Colors.green, useMaterial3: true),
+      home: const SplashScreen(),
     );
   }
 }
