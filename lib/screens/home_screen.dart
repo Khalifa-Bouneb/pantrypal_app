@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' show log;
 import '../services/auth_service.dart';
+import '../services/pantry_service.dart';
+import '../models/inventory_item.dart';
 import 'login_screen.dart';
 import 'add_item_screen.dart';
 import 'pantry_screen.dart';
@@ -36,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadUserInfo();
+    PantryService.instance.loadItems(); // Load pantry data
   }
 
   Future<void> _loadUserInfo() async {
@@ -149,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildHeader(),
                     const SizedBox(height: 24),
-                    _buildPantryInsights(),
+                    _buildPantryInsightsWrapper(), // Updated to use real data
                     const SizedBox(height: 24),
                     _buildQuickActionsGrid(),
                     const SizedBox(height: 24),
@@ -248,7 +251,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPantryInsights() {
+  // Wrapper to listen to pantry service
+  Widget _buildPantryInsightsWrapper() {
+    return ValueListenableBuilder<List<InventoryItem>>(
+      valueListenable: PantryService.instance.itemsNotifier,
+      builder: (context, items, _) {
+        // Calculate stats
+        final totalItems = items.length;
+        final expiringSoon = items
+            .where((i) => i.isExpiringSoon || i.isExpired)
+            .length;
+        final lowStock = items.where((i) => i.quantity < 2).length;
+
+        return _buildPantryInsights(
+          totalItems: totalItems.toString(),
+          expiringSoon: expiringSoon.toString(),
+          lowStock: lowStock.toString(),
+        );
+      },
+    );
+  }
+
+  Widget _buildPantryInsights({
+    required String totalItems,
+    required String expiringSoon,
+    required String lowStock,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -273,21 +301,21 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildInsightCard(
                 'Total Items',
-                '128',
+                totalItems,
                 Icons.inventory_2_outlined,
                 Colors.blue,
               ),
               const SizedBox(width: 12),
               _buildInsightCard(
                 'Expiring',
-                '3',
+                expiringSoon,
                 Icons.warning_amber_rounded,
                 Colors.orange,
               ),
               const SizedBox(width: 12),
               _buildInsightCard(
                 'Low Stock',
-                '5',
+                lowStock,
                 Icons.shopping_basket_outlined,
                 Colors.red,
               ),

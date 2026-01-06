@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart' show AppTheme;
-// import '../models/inventory_item.dart'; // Will use later
+import '../services/pantry_service.dart';
+import '../models/inventory_item.dart';
 
 class PantryScreen extends StatefulWidget {
   const PantryScreen({super.key});
@@ -55,134 +56,197 @@ class _PantryScreenState extends State<PantryScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildPantryList(),
-          const Center(child: Text('Vegetables Filter')),
-          const Center(child: Text('Fruits Filter')),
-          const Center(child: Text('Protein Filter')),
-        ],
+      body: ValueListenableBuilder<List<InventoryItem>>(
+        valueListenable: PantryService.instance.itemsNotifier,
+        builder: (context, items, child) {
+          if (items.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.kitchen_rounded,
+                    size: 64,
+                    color: AppTheme.primary.withOpacity(0.2),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Your pantry is empty',
+                    style: TextStyle(color: AppTheme.textLight, fontSize: 18),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              _buildPantryList(items),
+              // Simple filtering for now - exact string match is brittle, ideally use enums
+              _buildPantryList(
+                items
+                    .where(
+                      (i) =>
+                          i.category == 'Vegetables' || i.category == 'Produce',
+                    )
+                    .toList(),
+              ),
+              _buildPantryList(
+                items.where((i) => i.category == 'Fruits').toList(),
+              ),
+              _buildPantryList(
+                items
+                    .where(
+                      (i) => i.category == 'Meat' || i.category == 'Protein',
+                    )
+                    .toList(),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildPantryList() {
+  Widget _buildPantryList(List<InventoryItem> items) {
+    if (items.isEmpty) {
+      return const Center(child: Text('No items in this category'));
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: 5, // Mock data
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        return _buildPantryItem(
-          name: [
-            'Tomatoes',
-            'Bell Peppers',
-            'Milk',
-            'Spinach',
-            'Yogurt',
-          ][index],
-          quantity: [
-            '3 medium',
-            '2 medium',
-            '1 carton',
-            '1 bunch',
-            '2 cups',
-          ][index],
-          expiry: [
-            'Expires in 1 day',
-            'Expires in 2 days',
-            'Expires in 3 days',
-            'Expires in 2 days',
-            'Expires in 4 days',
-          ][index],
-          icon: [
-            Icons.circle,
-            Icons.circle,
-            Icons.local_drink,
-            Icons.grass,
-            Icons.local_cafe,
-          ][index], // Placeholders
-          color: [
-            Colors.red,
-            Colors.green,
-            Colors.blue,
-            Colors.green,
-            Colors.blue,
-          ][index],
-        );
+        final item = items[index];
+        return _buildPantryItem(item);
       },
     );
   }
 
-  Widget _buildPantryItem({
-    required String name,
-    required String quantity,
-    required String expiry,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  Widget _buildPantryItem(InventoryItem item) {
+    Color itemColor = Colors.green;
+    IconData itemIcon = Icons.circle;
+
+    // Simple visual mapping
+    if (item.category.contains('Meat')) {
+      itemColor = Colors.red;
+      itemIcon = Icons.restaurant;
+    } else if (item.category.contains('Dairy')) {
+      itemColor = Colors.blue;
+      itemIcon = Icons.local_drink;
+    } else if (item.category.contains('Produce') ||
+        item.category.contains('Vegetables')) {
+      itemColor = Colors.green;
+      itemIcon = Icons.grass;
+    } else if (item.category.contains('Fruit')) {
+      itemColor = Colors.orange;
+      itemIcon = Icons.apple;
+    }
+
+    // Check expiry
+    bool isExpired = item.isExpired;
+    bool isExpiringSoon =
+        item.daysUntilExpiry != null &&
+        item.daysUntilExpiry! <= 3 &&
+        !isExpired;
+    String expiryText = '';
+
+    if (item.expiryDate != null) {
+      if (isExpired) {
+        expiryText = 'Expired';
+      } else {
+        final days = item.daysUntilExpiry;
+        expiryText = days == 0 ? 'Expires today' : 'Expires in $days days';
+      }
+    }
+
+    return Dismissible(
+      key: Key(item.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.red,
+        child: const Icon(Icons.delete, color: Colors.white),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
+      onDismissed: (direction) {
+        PantryService.instance.removeItem(item.id);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${item.name} removed')));
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textDark,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: itemColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(itemIcon, color: itemColor, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textDark,
+                    ),
                   ),
-                ),
-                Text(
-                  quantity,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textLight,
+                  Text(
+                    '${item.quantity} ${item.unit}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textLight,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              expiry,
-              style: const TextStyle(
-                fontSize: 10,
-                color: Colors.orange,
-                fontWeight: FontWeight.bold,
+                ],
               ),
             ),
-          ),
-        ],
+            if (item.expiryDate != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isExpired
+                      ? Colors.red.withOpacity(0.1)
+                      : (isExpiringSoon
+                            ? Colors.orange.withOpacity(0.1)
+                            : Colors.green.withOpacity(0.1)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  expiryText,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isExpired
+                        ? Colors.red
+                        : (isExpiringSoon ? Colors.orange : Colors.green),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

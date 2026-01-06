@@ -4,18 +4,28 @@ import 'manual_add_screen.dart';
 import 'barcode_scanner_screen.dart';
 // import 'receipt_scanner_screen.dart'; // Will implement/uncomment later
 import 'home_screen.dart' show AppTheme;
+import '../services/pantry_service.dart';
 
 class AddItemScreen extends StatelessWidget {
   const AddItemScreen({super.key});
 
-  void _handleItemsAdded(BuildContext context, List<InventoryItem> items) {
+  Future<void> _handleItemsAdded(
+    BuildContext context,
+    List<InventoryItem> items,
+  ) async {
+    // Save items to persistent storage
+    await PantryService.instance.addItems(items);
+
+    if (!context.mounted) return;
+
     // Navigate back to home or pantry with success message
-    // For now, we just pop back
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Added ${items.length} items to pantry!'),
         backgroundColor: AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
