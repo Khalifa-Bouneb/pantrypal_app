@@ -6,10 +6,11 @@ import '../models/inventory_item.dart';
 import '../models/grocery_item.dart';
 import '../services/api_service.dart';
 import 'receipt_review_screen.dart';
+import '../l10n/app_localizations.dart';
 
 /// Screen for scanning grocery receipts using the camera
 class ReceiptScannerScreen extends StatefulWidget {
-  final Function(List<InventoryItem>) onItemsAdded;
+  final Future<void> Function(List<InventoryItem>) onItemsAdded;
 
   const ReceiptScannerScreen({
     super.key,
@@ -53,8 +54,13 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
       await _processReceipt(File(image.path));
     } catch (e) {
       if (mounted) {
+        final t = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error accessing camera: $e')),
+          SnackBar(
+            content: Text(
+              t.tr('receipt_error_accessing_camera').replaceAll('{error}', '$e'),
+            ),
+          ),
         );
         Navigator.pop(context);
       }
@@ -84,15 +90,16 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
       );
     } catch (e) {
       if (mounted) {
+        final t = AppLocalizations.of(context);
         // Show user-friendly error message
-        String errorMessage = 'Error processing receipt';
+        String errorMessage = t.tr('receipt_error_processing');
         
         if (e.toString().contains('not supported on web')) {
-          errorMessage = 'AI scanning requires mobile or desktop app.\n\n'
-              'Web preview uses demo data.\n\n'
-              'Run on Android/iOS for real AI scanning!';
+          errorMessage = '${t.tr('receipt_ai_requires_mobile')}\n\n'
+              '${t.tr('receipt_web_preview_uses_demo')}\n\n'
+              '${t.tr('receipt_run_on_mobile_for_real')}';
         } else {
-          errorMessage = 'Error: ${e.toString()}';
+          errorMessage = t.tr('receipt_error_generic').replaceAll('{error}', e.toString());
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -113,12 +120,14 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.black87,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Scan Receipt'),
+        title: Text(t.tr('scan_receipt_title')),
       ),
       body: _isProcessing
           ? Center(
@@ -127,20 +136,20 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
                 children: [
                   const CircularProgressIndicator(color: Colors.white),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Processing receipt...\n🤖 AI is analyzing your items',
+                  Text(
+                    t.tr('receipt_processing'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                     ),
                   ),
                   const SizedBox(height: 16),
                   if (kIsWeb)
-                    const Text(
-                      '(Web preview - using demo data)',
+                    Text(
+                      t.tr('receipt_web_preview_note'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.orange,
                         fontSize: 12,
                       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' show log;
 import '../services/auth_service.dart';
+import '../l10n/app_localizations.dart';
 
 // reuse colors from login_screen
 const Color kPrimaryGreen = Color(0xFF4CAF50);
@@ -34,6 +35,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   Future<void> _onCreateAccount() async {
+    final t = AppLocalizations.of(context);
     // Validate form
     if (!_formKey.currentState!.validate()) {
       return;
@@ -67,7 +69,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Navigator.of(context).pop(true);
       } else {
         log('Account creation returned false');
-        _showErrorSnackBar('Account creation failed. Please try again.');
+        _showErrorSnackBar(t.tr('account_creation_failed'));
       }
     } catch (e, st) {
       log('Create account error: $e\n$st');
@@ -103,11 +105,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Create Account',
-          style: TextStyle(color: kDarkGreen),
+        title: Text(
+          t.tr('create_account'),
+          style: const TextStyle(color: kDarkGreen),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -128,15 +131,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     children: [
                       _buildInputField(
                         controller: _nameCtrl,
-                        label: 'Full Name',
-                        hint: 'Enter your name',
+                        label: t.tr('full_name'),
+                        hint: t.tr('enter_name'),
                         icon: Icons.person_outline,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Name is required';
+                            return t.tr('name_required');
                           }
                           if (v.trim().length < 2) {
-                            return 'Name must be at least 2 characters';
+                            return t.tr('name_min_2');
                           }
                           return null;
                         },
@@ -144,16 +147,16 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       const SizedBox(height: 20),
                       _buildInputField(
                         controller: _emailCtrl,
-                        label: 'Email',
-                        hint: 'Enter your email',
+                        label: t.tr('email'),
+                        hint: t.tr('enter_email'),
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Email is required';
+                            return t.tr('email_required');
                           }
                           if (!v.contains('@') || !v.contains('.')) {
-                            return 'Enter a valid email address';
+                            return t.tr('enter_valid_email');
                           }
                           return null;
                         },
@@ -161,8 +164,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       const SizedBox(height: 20),
                       _buildPasswordField(
                         controller: _passwordCtrl,
-                        label: 'Password',
-                        hint: 'Enter your password',
+                        label: t.tr('password'),
+                        hint: t.tr('enter_password'),
                         obscure: _obscurePassword,
                         onToggle: () {
                           setState(() {
@@ -171,13 +174,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         },
                         validator: (v) {
                           if (v == null || v.isEmpty) {
-                            return 'Password is required';
+                            return t.tr('password_required');
                           }
                           if (v.length < 6) {
-                            return 'Password must be at least 6 characters';
+                            return t.tr('password_min_6');
                           }
                           if (!v.contains(RegExp(r'[A-Za-z]'))) {
-                            return 'Password must contain at least one letter';
+                            return t.tr('password_letter_required');
                           }
                           return null;
                         },
@@ -185,8 +188,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       const SizedBox(height: 20),
                       _buildPasswordField(
                         controller: _confirmCtrl,
-                        label: 'Confirm Password',
-                        hint: 'Confirm your password',
+                        label: t.tr('confirm_password'),
+                        hint: t.tr('confirm_password_hint'),
                         obscure: _obscureConfirm,
                         onToggle: () {
                           setState(() {
@@ -195,10 +198,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         },
                         validator: (v) {
                           if (v == null || v.isEmpty) {
-                            return 'Please confirm your password';
+                            return t.tr('confirm_password_required');
                           }
                           if (v != _passwordCtrl.text) {
-                            return 'Passwords do not match';
+                            return t.tr('passwords_do_not_match');
                           }
                           return null;
                         },
@@ -235,10 +238,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Text('Create Account'),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward, size: 20),
+                          children: [
+                            Text(t.tr('create_account')),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward, size: 20),
                           ],
                         ),
                       ),
@@ -256,12 +259,16 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: const [
-                          Icon(Icons.info_outline, color: kDarkGreen, size: 20),
-                          SizedBox(width: 8),
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            color: kDarkGreen,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
                           Text(
-                            'Password Requirements:',
-                            style: TextStyle(
+                            t.tr('password_requirements'),
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: kDarkGreen,
                             ),
@@ -269,9 +276,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      _buildRequirement('At least 6 characters'),
-                      _buildRequirement('Contains letters'),
-                      _buildRequirement('Passwords must match'),
+                      _buildRequirement(t.tr('requirement_at_least_6')),
+                      _buildRequirement(t.tr('requirement_contains_letters')),
+                      _buildRequirement(t.tr('requirement_passwords_match')),
                     ],
                   ),
                 ),
@@ -304,6 +311,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   Widget _buildHeader() {
+    final t = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
       decoration: BoxDecoration(
@@ -318,26 +326,26 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 40,
             backgroundColor: kPrimaryGreen,
             child: Icon(Icons.person_add, size: 48, color: Colors.white),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'Join PantryPal',
-            style: TextStyle(
+            t.tr('join_pantrypal'),
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: kDarkGreen,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
-            'Create an account to get started',
-            style: TextStyle(fontSize: 14, color: Colors.black54),
+            t.tr('create_account_subtitle'),
+            style: const TextStyle(fontSize: 14, color: Colors.black54),
           ),
         ],
       ),

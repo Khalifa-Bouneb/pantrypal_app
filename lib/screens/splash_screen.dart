@@ -3,6 +3,7 @@ import 'dart:async';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -106,6 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final gradient = const RadialGradient(
       center: Alignment(-0.2, -0.6),
       radius: 1.2,
@@ -150,8 +152,8 @@ class _SplashScreenState extends State<SplashScreen>
 
                 const SizedBox(height: 14),
 
-                const Text(
-                  'Loading...',
+                Text(
+                  t.tr('loading'),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.white,

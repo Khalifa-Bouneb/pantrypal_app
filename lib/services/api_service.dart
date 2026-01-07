@@ -1,17 +1,18 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
 import '../models/grocery_item.dart';
-import 'gemini_service.dart';
+import 'llm_service.dart';
 
 /// Service for handling API calls to backend (OCR, barcode lookup, etc.)
-/// Uses Gemini AI when configured, otherwise falls back to mock data
+/// Uses mock data for now as Receipt Scanning is not yet migrated to open source
 class ApiService {
   // Simulate network delay for mock mode
   static const Duration _mockDelay = Duration(seconds: 2);
   
-  final GeminiService? _geminiService;
-
-  ApiService() : _geminiService = GeminiService.isConfigured() ? GeminiService() : null;
+  ApiService();
 
   /// Send receipt image to backend for OCR processing
   /// Returns a list of parsed grocery items
@@ -30,36 +31,32 @@ class ApiService {
       return _getMockReceiptItems();
     }
     
-    // Try Gemini AI first if configured
-    if (_geminiService != null) {
-      try {
-        print('🤖 Using Gemini AI for receipt processing...');
-        final items = await _geminiService.processReceiptImage(imageFile);
-        print('✅ Gemini AI successfully extracted ${items.length} items');
-        return items;
-      } catch (e, stackTrace) {
-        print('❌ Gemini AI failed with error: $e');
-        print('Stack trace: $stackTrace');
-        
-        // If it's a platform error, show helpful message
-        if (e is UnsupportedError) {
-          print('💡 Tip: Run on mobile or desktop for AI features');
-          await Future.delayed(_mockDelay);
-          return _getMockReceiptItems();
-        }
-        
-        rethrow; // Don't fall back to mock data for other errors
+    // AI Receipt Scanning is currently disabled pending migration
+    // Real AI receipt scanning for mobile/desktop.
+    try {
+      Uint8List bytes;
+      if (imageFile is File) {
+        bytes = await imageFile.readAsBytes();
+      } else if (imageFile is XFile) {
+        bytes = await imageFile.readAsBytes();
+      } else {
+        throw Exception('Unsupported image type: ${imageFile.runtimeType}');
       }
-    } else {
-      print('⚠️ Gemini AI not configured. Using mock data.');
-      print('To enable AI-powered receipt scanning:');
-      print('1. Get a free API key from https://makersuite.google.com/app/apikey');
-      print('2. Add it to lib/services/gemini_service.dart');
-      
-      // Fallback: Simulate API call delay and return mock data
-      await Future.delayed(_mockDelay);
-      return _getMockReceiptItems();
+
+      if (!LLMService.instance.isConfigured) {
+        throw Exception('AI not configured. Set API key and a vision model in Profile → AI Model Settings.');
+      }
+
+      final items = await LLMService.instance.parseReceiptImageToItems(bytes);
+      if (items.isEmpty) {
+        throw Exception('No items found on the receipt. Try retaking a clearer photo.');
+      }
+      return items;
+    } catch (e) {
+      // If anything goes wrong, surface a clear error (caller will show snackbar).
+      throw Exception('AI receipt scanning failed: $e');
     }
+
   }
 
   /// Look up product by barcode

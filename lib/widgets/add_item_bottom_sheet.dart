@@ -9,7 +9,7 @@ import '../screens/manual_add_screen.dart';
 /// 2. Scan Barcode (Quick single item)
 /// 3. Add Manually (Fallback)
 class AddItemBottomSheet extends StatelessWidget {
-  final Function(List<InventoryItem>) onItemsAdded;
+  final Future<void> Function(List<InventoryItem>) onItemsAdded;
 
   const AddItemBottomSheet({
     super.key,
