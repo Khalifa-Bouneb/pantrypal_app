@@ -2,12 +2,14 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/inventory_item.dart';
+import '../models/meal_plan.dart';
 import '../models/shopping_item.dart';
 
 class PantryService {
   static final PantryService instance = PantryService._init();
   static const String _storageKey = 'pantry_items';
   static const String _shoppingKey = 'shopping_list';
+  static const String _mealPlanKey = 'meal_plan_latest';
 
   PantryService._init();
 
@@ -15,9 +17,11 @@ class PantryService {
   final ValueNotifier<List<ShoppingItem>> shoppingListNotifier = ValueNotifier(
     [],
   );
+  final ValueNotifier<MealPlan?> mealPlanNotifier = ValueNotifier(null);
 
   List<InventoryItem> get items => itemsNotifier.value;
   List<ShoppingItem> get shoppingList => shoppingListNotifier.value;
+  MealPlan? get mealPlan => mealPlanNotifier.value;
 
   Future<void> loadItems() async {
     try {
@@ -41,6 +45,15 @@ class PantryService {
             .map((item) => ShoppingItem.fromJson(item))
             .toList();
         shoppingListNotifier.value = loadedShopping;
+      }
+
+      // Load latest Meal Plan
+      final String? mealPlanJson = prefs.getString(_mealPlanKey);
+      if (mealPlanJson != null && mealPlanJson.trim().isNotEmpty) {
+        final decoded = jsonDecode(mealPlanJson);
+        if (decoded is Map<String, dynamic>) {
+          mealPlanNotifier.value = MealPlan.fromJson(decoded);
+        }
       }
     } catch (e) {
       debugPrint('Error loading data: $e');
@@ -68,6 +81,22 @@ class PantryService {
       await prefs.setString(_shoppingKey, encodedList);
     } catch (e) {
       debugPrint('Error saving shopping list: $e');
+    }
+  }
+
+  Future<void> saveMealPlan(MealPlan? plan) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (plan == null) {
+        await prefs.remove(_mealPlanKey);
+        mealPlanNotifier.value = null;
+        return;
+      }
+      final encoded = jsonEncode(plan.toJson());
+      await prefs.setString(_mealPlanKey, encoded);
+      mealPlanNotifier.value = plan;
+    } catch (e) {
+      debugPrint('Error saving meal plan: $e');
     }
   }
 

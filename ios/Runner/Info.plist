@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>We use the camera to scan barcodes and receipts.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We use your photo library to select a profile picture.</string>
 </dict>
 </plist>

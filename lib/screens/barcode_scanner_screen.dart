@@ -3,10 +3,11 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/inventory_item.dart';
 import '../services/api_service.dart';
 import 'home_screen.dart' show AppTheme;
+import '../l10n/app_localizations.dart';
 
 /// Screen for scanning product barcodes and QR codes
 class BarcodeScannerScreen extends StatefulWidget {
-  final Function(List<InventoryItem>) onItemsAdded;
+  final Future<void> Function(List<InventoryItem>) onItemsAdded;
 
   const BarcodeScannerScreen({super.key, required this.onItemsAdded});
 
@@ -50,15 +51,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       if (item != null) {
         // Convert to inventory item and add
         final inventoryItem = InventoryItem.fromGroceryItem(item);
-        widget.onItemsAdded([inventoryItem]);
+        await widget.onItemsAdded([inventoryItem]);
 
         // Handled by parent callback
       } else {
         // Product not found
         if (mounted) {
+          final t = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Product not found: $code'),
+              content: Text(t.tr('product_not_found').replaceAll('{code}', code)),
               backgroundColor: Colors.orange,
             ),
           );
@@ -66,8 +68,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final t = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(t.tr('error_with_details').replaceAll('{error}', '$e')),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -83,6 +89,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.black, // Camera background
       body: Stack(
@@ -118,11 +126,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                         ),
                         onPressed: () => Navigator.pop(context),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Center(
                           child: Text(
-                            'Scan Barcode',
-                            style: TextStyle(
+                            t.tr('scan_barcode'),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -190,8 +198,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _isProcessing
-                        ? 'Looking up product...'
-                        : 'Point camera at barcode or QR code',
+                        ? t.tr('looking_up_product')
+                        : t.tr('point_camera_at_barcode'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,

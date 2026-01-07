@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/inventory_item.dart';
 import 'home_screen.dart' show AppTheme;
+import '../l10n/app_localizations.dart';
 
 /// Screen for manually adding items to inventory
 class ManualAddScreen extends StatefulWidget {
-  final Function(List<InventoryItem>) onItemsAdded;
+  final Future<void> Function(List<InventoryItem>) onItemsAdded;
 
   const ManualAddScreen({super.key, required this.onItemsAdded});
 
@@ -16,6 +17,8 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _quantityController = TextEditingController(text: '1');
+
+  bool _submitting = false;
 
   String _selectedCategory = 'Produce';
   String _selectedUnit = 'pcs';
@@ -77,8 +80,10 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
     }
   }
 
-  void _addItem() {
+  Future<void> _addItem() async {
+    if (_submitting) return;
     if (_formKey.currentState!.validate()) {
+      setState(() => _submitting = true);
       final newItem = InventoryItem(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
@@ -89,37 +94,48 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
         expiryDate: _expiryDate,
       );
 
-      widget.onItemsAdded([newItem]);
+      try {
+        await widget.onItemsAdded([newItem]);
+      } finally {
+        if (mounted) setState(() => _submitting = false);
+      }
+    }
+  }
 
-      // Pop handled by parent usually, but consistent with pattern
-      // Parent callback might not navigate, so we pop here or let parent handle?
-      // In AddItemScreen logic, we passed the callback but didn't handle pop there inside the callback wrapper fully if we want close THIS screen first.
-      // Actually AddItemScreen callback pops itself effectively.
-      // Let's just pop this screen to return to AddItemScreen which then might finish.
-      // Wait, AddItemScreen passed: (items) => _handleItemsAdded(context, items).
-      // _handleItemsAdded pops the context. So calling the callback pops ONCE.
-      // We are at ManualAddScreen -> AddItemScreen.
-      // If we want to fully close Manual AND AddItem, we need care.
-      // Actually `onItemsAdded` in AddItemScreen pops context (ManualAddScreen).
-      // Then shows snackbar in AddItemScreen.
-
-      widget.onItemsAdded([newItem]);
-      // NOTE: Logic in AddItemScreen calls Navigator.pop(context).
-      // That context is ManualAddScreen's context if passed correctly?
-      // No, it handles the logic.
-      // Let's assume the callback handles navigation or we should pop here.
-      // The previous implementation popped here. Let's keep it consistent.
-      // The updated AddItemScreen uses `Navigator.pop(context)` which closes ManualScreen.
+  String _categoryLabel(AppLocalizations t, String category) {
+    switch (category) {
+      case 'Produce':
+        return t.tr('category_produce');
+      case 'Dairy':
+        return t.tr('category_dairy');
+      case 'Meat':
+        return t.tr('category_meat');
+      case 'Bakery':
+        return t.tr('category_bakery');
+      case 'Pantry Staples':
+        return t.tr('category_pantry_staples');
+      case 'Frozen':
+        return t.tr('category_frozen');
+      case 'Beverages':
+        return t.tr('category_beverages');
+      case 'Snacks':
+        return t.tr('category_snacks');
+      case 'Other':
+        return t.tr('category_other');
+      default:
+        return category;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text(
-          'Add Manually',
+        title: Text(
+          t.tr('manual_add_title'),
           style: TextStyle(
             color: AppTheme.textDark,
             fontWeight: FontWeight.bold,
@@ -129,7 +145,7 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             color: AppTheme.textDark,
           ),
@@ -144,18 +160,18 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildSectionLabel('Item Details'),
+                _buildSectionLabel(t.tr('item_details')),
                 const SizedBox(height: 16),
 
                 // Item Name field
                 TextFormField(
                   controller: _nameController,
                   decoration: _inputDecoration(
-                    'Item Name',
+                    t.tr('item_name'),
                     Icons.shopping_bag_outlined,
                   ),
                   validator: (value) =>
-                      value == null || value.trim().isEmpty ? 'Required' : null,
+                      value == null || value.trim().isEmpty ? t.tr('required') : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -163,17 +179,17 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
                 DropdownButtonFormField<String>(
                   value: _selectedCategory,
                   decoration: _inputDecoration(
-                    'Category',
+                    t.tr('category'),
                     Icons.category_outlined,
                   ),
                   items: _categories
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .map((c) => DropdownMenuItem(value: c, child: Text(_categoryLabel(t, c))))
                       .toList(),
                   onChanged: (v) => setState(() => _selectedCategory = v!),
                 ),
                 const SizedBox(height: 24),
 
-                _buildSectionLabel('Quantity & Expiry'),
+                _buildSectionLabel(t.tr('quantity_and_expiry')),
                 const SizedBox(height: 16),
 
                 Row(
@@ -184,12 +200,12 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
                         controller: _quantityController,
                         keyboardType: TextInputType.number,
                         decoration: _inputDecoration(
-                          'Qty',
+                          t.tr('qty'),
                           Icons.numbers_rounded,
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) return 'Required';
-                          if (double.tryParse(value) == null) return 'Invalid';
+                          if (value == null || value.isEmpty) return t.tr('required');
+                          if (double.tryParse(value) == null) return t.tr('invalid');
                           return null;
                         },
                       ),
@@ -199,7 +215,7 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
                       flex: 1,
                       child: DropdownButtonFormField<String>(
                         value: _selectedUnit,
-                        decoration: _inputDecoration('Unit', null),
+                        decoration: _inputDecoration(t.tr('unit'), null),
                         items: _units
                             .map(
                               (u) => DropdownMenuItem(value: u, child: Text(u)),
@@ -218,12 +234,12 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
                   borderRadius: BorderRadius.circular(16),
                   child: InputDecorator(
                     decoration: _inputDecoration(
-                      'Expiry Date',
+                      t.tr('expiry_date'),
                       Icons.calendar_today_rounded,
                     ),
                     child: Text(
                       _expiryDate == null
-                          ? 'Select Date'
+                          ? t.tr('select_date')
                           : '${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}',
                       style: TextStyle(
                         color: _expiryDate == null
@@ -239,20 +255,29 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
                 SizedBox(
                   height: 56,
                   child: FilledButton(
-                    onPressed: _addItem,
+                    onPressed: _submitting ? null : _addItem,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      'Add to Pantry',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: _submitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            t.tr('add_to_pantry'),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -266,7 +291,7 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
   InputDecoration _inputDecoration(String label, IconData? icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppTheme.textLight),
+      labelStyle: TextStyle(color: AppTheme.textLight),
       prefixIcon: icon != null ? Icon(icon, color: AppTheme.primary) : null,
       filled: true,
       fillColor: AppTheme.surface,
@@ -289,7 +314,7 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
   Widget _buildSectionLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
         color: AppTheme.textDark,

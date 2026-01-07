@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart' show AppTheme;
 import '../services/pantry_service.dart';
 import '../models/inventory_item.dart';
+import '../l10n/app_localizations.dart';
 
 class PantryScreen extends StatefulWidget {
   const PantryScreen({super.key});
@@ -22,13 +23,14 @@ class _PantryScreenState extends State<PantryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: AppTheme.surface,
         elevation: 0,
-        title: const Text(
-          'My Pantry',
+        title: Text(
+          t.tr('my_pantry'),
           style: TextStyle(
             color: AppTheme.textDark,
             fontWeight: FontWeight.bold,
@@ -36,7 +38,7 @@ class _PantryScreenState extends State<PantryScreen>
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             color: AppTheme.textDark,
           ),
@@ -48,11 +50,11 @@ class _PantryScreenState extends State<PantryScreen>
           unselectedLabelColor: AppTheme.textLight,
           indicatorColor: AppTheme.primary,
           isScrollable: true,
-          tabs: const [
-            Tab(text: 'All Items'),
-            Tab(text: 'Vegetables'),
-            Tab(text: 'Fruits'),
-            Tab(text: 'Protein'),
+          tabs: [
+            Tab(text: t.tr('all_items')),
+            Tab(text: t.tr('vegetables')),
+            Tab(text: t.tr('fruits')),
+            Tab(text: t.tr('protein')),
           ],
         ),
       ),
@@ -70,8 +72,8 @@ class _PantryScreenState extends State<PantryScreen>
                     color: AppTheme.primary.withOpacity(0.2),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Your pantry is empty',
+                  Text(
+                    t.tr('pantry_empty'),
                     style: TextStyle(color: AppTheme.textLight, fontSize: 18),
                   ),
                 ],
@@ -111,7 +113,7 @@ class _PantryScreenState extends State<PantryScreen>
 
   Widget _buildPantryList(List<InventoryItem> items) {
     if (items.isEmpty) {
-      return const Center(child: Text('No items in this category'));
+      return Center(child: Text(AppLocalizations.of(context).tr('no_items_category')));
     }
 
     return ListView.builder(
@@ -125,6 +127,7 @@ class _PantryScreenState extends State<PantryScreen>
   }
 
   Widget _buildPantryItem(InventoryItem item) {
+    final t = AppLocalizations.of(context);
     Color itemColor = Colors.green;
     IconData itemIcon = Icons.circle;
 
@@ -154,10 +157,12 @@ class _PantryScreenState extends State<PantryScreen>
 
     if (item.expiryDate != null) {
       if (isExpired) {
-        expiryText = 'Expired';
+        expiryText = t.tr('expired');
       } else {
         final days = item.daysUntilExpiry;
-        expiryText = days == 0 ? 'Expires today' : 'Expires in $days days';
+        expiryText = days == 0
+            ? t.tr('expires_today')
+            : t.tr('expires_in_days').replaceAll('{days}', '${days ?? ''}');
       }
     }
 
@@ -174,7 +179,9 @@ class _PantryScreenState extends State<PantryScreen>
         PantryService.instance.removeItem(item.id);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('${item.name} removed')));
+        ).showSnackBar(
+          SnackBar(content: Text('${item.name} ${t.tr('removed')}')),
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -207,7 +214,7 @@ class _PantryScreenState extends State<PantryScreen>
                 children: [
                   Text(
                     item.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textDark,
@@ -215,7 +222,7 @@ class _PantryScreenState extends State<PantryScreen>
                   ),
                   Text(
                     '${item.quantity} ${item.unit}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       color: AppTheme.textLight,
                     ),

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/inventory_item.dart';
 import 'manual_add_screen.dart';
 import 'barcode_scanner_screen.dart';
-// import 'receipt_scanner_screen.dart'; // Will implement/uncomment later
+import 'receipt_scanner_screen.dart';
 import 'home_screen.dart' show AppTheme;
+import '../l10n/app_localizations.dart';
 import '../services/pantry_service.dart';
 
 class AddItemScreen extends StatelessWidget {
@@ -13,30 +14,40 @@ class AddItemScreen extends StatelessWidget {
     BuildContext context,
     List<InventoryItem> items,
   ) async {
+    final t = AppLocalizations.of(context);
     // Save items to persistent storage
     await PantryService.instance.addItems(items);
 
     if (!context.mounted) return;
 
-    // Navigate back to home or pantry with success message
-    Navigator.pop(context);
+    // Show feedback once, then return to Home (pop child + pop AddItemScreen).
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Added ${items.length} items to pantry!'),
+        content: Text(
+          t
+              .tr('added_items_to_pantry')
+              .replaceAll('{count}', '${items.length}')
+              .replaceAll('{plural}', items.length == 1 ? '' : 's'),
+        ),
         backgroundColor: AppTheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
+
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop();
+    if (navigator.canPop()) navigator.pop();
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text(
-          'Add Items',
+        title: Text(
+          t.tr('add_items_title'),
           style: TextStyle(
             color: AppTheme.textDark,
             fontWeight: FontWeight.bold,
@@ -46,7 +57,7 @@ class AddItemScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             color: AppTheme.textDark,
           ),
@@ -59,8 +70,8 @@ class AddItemScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'How would you like to add items?',
+              Text(
+                t.tr('how_add_items'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -69,8 +80,8 @@ class AddItemScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Choose the method that works best for you.',
+              Text(
+                t.tr('choose_method'),
                 style: TextStyle(fontSize: 14, color: AppTheme.textLight),
                 textAlign: TextAlign.center,
               ),
@@ -78,31 +89,30 @@ class AddItemScreen extends StatelessWidget {
 
               _buildOptionCard(
                 context,
-                title: 'Scan Receipt',
-                subtitle: 'AI-powered instant inventory update',
+                title: t.tr('scan_receipt'),
+                subtitle: t.tr('ai_powered_inventory'),
                 icon: Icons.receipt_long_rounded,
                 color: AppTheme.primary,
-                suffixTag: 'AI Powered',
+                suffixTag: t.tr('ai_powered_tag'),
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Receipt Scanning coming soon!'),
-                    ),
-                  );
-                  /* Navigator.push(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ReceiptScannerScreen(onItemsAdded: (items) => _handleItemsAdded(context, items)),
+                      builder: (context) => ReceiptScannerScreen(
+                        onItemsAdded: (items) async {
+                          await PantryService.instance.addItems(items);
+                        },
+                      ),
                     ),
-                  ); */
+                  );
                 },
               ),
               const SizedBox(height: 16),
 
               _buildOptionCard(
                 context,
-                title: 'Scan Barcode',
-                subtitle: 'Quick product identification',
+                title: t.tr('scan_barcode'),
+                subtitle: t.tr('quick_product_id'),
                 icon: Icons.qr_code_scanner_rounded,
                 color: Colors.blue, // Keep differentiated colors for visual aid
                 onTap: () {
@@ -121,8 +131,8 @@ class AddItemScreen extends StatelessWidget {
 
               _buildOptionCard(
                 context,
-                title: 'Add Manually',
-                subtitle: 'Type items one by one',
+                title: t.tr('add_manually'),
+                subtitle: t.tr('type_one_by_one'),
                 icon: Icons.edit_note_rounded,
                 color: Colors.orange,
                 onTap: () {
@@ -156,7 +166,7 @@ class AddItemScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Pro tip: Scan your receipt right after shopping to automatically update your pantry!',
+                        t.tr('pro_tip'),
                         style: TextStyle(
                           color: Colors.amber[900],
                           fontSize: 12,
@@ -222,7 +232,7 @@ class AddItemScreen extends StatelessWidget {
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.textDark,
@@ -254,7 +264,7 @@ class AddItemScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.textLight,
                         ),

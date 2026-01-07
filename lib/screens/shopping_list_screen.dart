@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart' show AppTheme;
 import '../services/pantry_service.dart';
 import '../models/shopping_item.dart';
+import '../l10n/app_localizations.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
@@ -14,16 +15,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   final _addItemController = TextEditingController();
 
   void _addNewItem() {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.surface,
-        title: const Text('Add to Shopping List'),
+        title: Text(t.tr('add_to_shopping_list')),
         content: TextField(
           controller: _addItemController,
           autofocus: true,
           decoration: InputDecoration(
-            hintText: 'e.g., Milk, Bread',
+            hintText: t.tr('example_milk_bread'),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -34,8 +36,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
+            child: Text(
+              t.tr('cancel'),
               style: TextStyle(color: AppTheme.textLight),
             ),
           ),
@@ -53,7 +55,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               }
             },
             style: FilledButton.styleFrom(backgroundColor: AppTheme.primary),
-            child: const Text('Add'),
+            child: Text(t.tr('add_item')),
           ),
         ],
       ),
@@ -62,11 +64,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text(
-          'Shopping List',
+        title: Text(
+          t.tr('shopping_list'),
           style: TextStyle(
             color: AppTheme.textDark,
             fontWeight: FontWeight.bold,
@@ -76,7 +79,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             color: AppTheme.textDark,
           ),
@@ -87,7 +90,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         onPressed: _addNewItem,
         backgroundColor: AppTheme.primary,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add Item', style: TextStyle(color: Colors.white)),
+        label: Text(t.tr('add_item'), style: const TextStyle(color: Colors.white)),
       ),
       body: ValueListenableBuilder<List<ShoppingItem>>(
         valueListenable: PantryService.instance.shoppingListNotifier,
@@ -103,8 +106,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     color: AppTheme.primary.withOpacity(0.2),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Your list is empty',
+                  Text(
+                    t.tr('shopping_list_empty'),
                     style: TextStyle(color: AppTheme.textLight),
                   ),
                 ],
@@ -121,11 +124,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 child: CustomScrollView(
                   slivers: [
                     if (activeItems.isNotEmpty) ...[
-                      const SliverToBoxAdapter(
+                      SliverToBoxAdapter(
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(24, 24, 24, 8),
                           child: Text(
-                            'To Buy',
+                            t.tr('to_buy'),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -143,11 +146,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                       ),
                     ],
                     if (boughtItems.isNotEmpty) ...[
-                      const SliverToBoxAdapter(
+                      SliverToBoxAdapter(
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(24, 24, 24, 8),
                           child: Text(
-                            'Completed',
+                            t.tr('completed'),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -193,8 +196,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                               .moveBoughtItemsToPantry();
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Moved items to Pantry!'),
+                              SnackBar(
+                                content: Text(t.tr('moved_items_to_pantry')),
                                 backgroundColor: AppTheme.primary,
                               ),
                             );
@@ -207,7 +210,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                           ),
                         ),
                         icon: const Icon(Icons.check_circle_outline),
-                        label: Text('Done Shopping (${boughtItems.length})'),
+                        label: Text(
+                          t
+                              .tr('done_shopping')
+                              .replaceAll('{count}', '${boughtItems.length}'),
+                        ),
                       ),
                     ),
                   ),

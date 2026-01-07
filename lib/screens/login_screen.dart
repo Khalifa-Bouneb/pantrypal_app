@@ -3,6 +3,7 @@ import 'dart:developer' show log;
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'create_account_screen.dart';
+import '../l10n/app_localizations.dart';
 
 // design colors
 const Color kPrimaryGreen = Color(0xFF4CAF50);
@@ -31,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _onSignIn() async {
+    final t = AppLocalizations.of(context);
     // Validate form first
     if (!_formKey.currentState!.validate()) {
       return;
@@ -61,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✓ Signed in successfully!'),
+            content: Text(t.tr('signed_in_success')),
             backgroundColor: kPrimaryGreen,
             duration: const Duration(seconds: 2),
           ),
@@ -74,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         log('Sign in returned false');
-        _showErrorSnackBar('Sign in failed. Please try again.');
+        _showErrorSnackBar(t.tr('sign_in_failed'));
       }
     } catch (e, st) {
       log('Sign in error: $e\n$st');
@@ -109,6 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _goToSignUp() async {
+    final t = AppLocalizations.of(context);
     // Push create account; when it pops, check for a "created" result
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const CreateAccountScreen()),
@@ -119,9 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            '✓ Account created successfully! Please sign in.',
-          ),
+          content: Text(t.tr('account_created_success')),
           backgroundColor: kPrimaryGreen,
           duration: const Duration(seconds: 3),
         ),
@@ -131,10 +132,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sign In', style: TextStyle(color: kDarkGreen)),
-        backgroundColor: Colors.white,
+        title: Text(
+          t.tr('sign_in'),
+          style: TextStyle(color: isDark ? colorScheme.onSurface : kDarkGreen),
+        ),
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
@@ -155,16 +163,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       _buildInputField(
                         controller: _emailCtrl,
-                        label: 'Email',
-                        hint: 'Enter your email',
+                        label: t.tr('email'),
+                        hint: t.tr('enter_email'),
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Email is required';
+                            return t.tr('email_required');
                           }
                           if (!v.contains('@') || !v.contains('.')) {
-                            return 'Enter a valid email address';
+                            return t.tr('enter_valid_email');
                           }
                           return null;
                         },
@@ -203,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        child: const Text('Sign In'),
+                        child: Text(AppLocalizations.of(context).tr('sign_in')),
                       ),
 
                 const SizedBox(height: 20),
@@ -218,9 +226,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Create New Account',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).tr('create_new_account'),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: kPrimaryGreen,
@@ -234,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Information text
                 Center(
                   child: Text(
-                    'You must create an account and sign in\nto access PantryPal',
+                    t.tr('must_create_account'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -252,10 +260,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildHeader() {
+    final t = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
       decoration: BoxDecoration(
-        color: kLightGreen,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Theme.of(context).colorScheme.surface
+            : kLightGreen,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
@@ -266,26 +277,41 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: kPrimaryGreen,
-            child: Icon(Icons.person, size: 48, color: Colors.white),
+          Container(
+            width: 86,
+            height: 86,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.06 : 0.9),
+              shape: BoxShape.circle,
+            ),
+            child: Image.asset(
+              'assets/images/pantrypallogo.png',
+              fit: BoxFit.contain,
+            ),
           ),
           SizedBox(height: 16),
           Text(
-            'Welcome to PantryPal',
+            t.tr('welcome_to_pantrypal'),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: kDarkGreen,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.onSurface
+                  : kDarkGreen,
             ),
           ),
           SizedBox(height: 4),
           Text(
-            'Sign in to manage your pantry',
-            style: TextStyle(fontSize: 14, color: Colors.black54),
+            t.tr('sign_in_subtitle'),
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.onSurface.withOpacity(0.75)
+                  : Colors.black54,
+            ),
           ),
         ],
       ),
@@ -293,14 +319,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildPasswordField() {
+    final t = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Align(
+        Align(
           alignment: Alignment.centerLeft,
           child: Text(
-            'Password',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            t.tr('password'),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
         ),
         const SizedBox(height: 8),
@@ -309,15 +336,15 @@ class _LoginScreenState extends State<LoginScreen> {
           obscureText: _obscurePassword,
           validator: (v) {
             if (v == null || v.isEmpty) {
-              return 'Password is required';
+              return t.tr('password_required');
             }
             if (v.length < 6) {
-              return 'Password must be at least 6 characters';
+              return t.tr('password_min_6');
             }
             return null;
           },
           decoration: InputDecoration(
-            hintText: 'Enter your password',
+            hintText: t.tr('enter_password'),
             prefixIcon: const Icon(Icons.lock_outline, color: kPrimaryGreen),
             suffixIcon: IconButton(
               icon: Icon(

@@ -1,24 +1,38 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:developer' show log;
 import '../services/auth_service.dart';
 import '../services/pantry_service.dart';
 import '../models/inventory_item.dart';
+import '../models/user_profile.dart';
 import 'login_screen.dart';
 import 'add_item_screen.dart';
 import 'pantry_screen.dart';
 import 'shopping_list_screen.dart';
 import 'recipes_screen.dart';
 import 'profile_screen.dart';
+import 'chat_screen.dart';
+import 'recipe_generation_screen.dart';
+import '../l10n/app_localizations.dart';
 
 // Modern Color Palette
+import '../services/theme_service.dart';
+import '../services/user_profile_service.dart';
+
+// Modern Color Palette - Dynamic based on Theme
 class AppTheme {
+  static bool get _isDark => ThemeService.instance.isDarkMode;
+
   static const Color primary = Color(0xFF10B981); // Emerald 500
   static const Color primaryDark = Color(0xFF059669); // Emerald 600
-  static const Color primaryLight = Color(0xFFD1FAE5); // Emerald 100
-  static const Color background = Color(0xFFF9FAFB); // Gray 50
-  static const Color surface = Colors.white;
-  static const Color textDark = Color(0xFF1F2937); // Gray 800
-  static const Color textLight = Color(0xFF6B7280); // Gray 500
+  
+  static Color get primaryLight => _isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5); // Emerald 900 vs 100
+  static Color get background => _isDark ? const Color(0xFF111827) : const Color(0xFFF9FAFB); // Gray 900 vs 50
+  static Color get surface => _isDark ? const Color(0xFF1F2937) : Colors.white; // Gray 800 vs White
+  
+  static Color get textDark => _isDark ? const Color(0xFFF9FAFB) : const Color(0xFF1F2937); // Gray 50 vs 800
+  static Color get textLight => _isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280); // Gray 400 vs 500
 }
 
 class HomeScreen extends StatefulWidget {
@@ -39,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadUserInfo();
     PantryService.instance.loadItems(); // Load pantry data
+    UserProfileService.instance.load(); // Load user profile (incl. avatar)
   }
 
   Future<void> _loadUserInfo() async {
@@ -56,22 +71,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleSignOut() async {
+    final t = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.surface,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Sign Out',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          t.tr('sign_out_title'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        content: const Text('Are you sure you want to end your session?'),
+        content: Text(t.tr('sign_out_confirm')),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              'Cancel',
+            child: Text(
+              t.tr('cancel'),
               style: TextStyle(color: AppTheme.textLight),
             ),
           ),
@@ -81,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.red.shade50,
               foregroundColor: Colors.red,
             ),
-            child: const Text('Sign Out'),
+            child: Text(t.tr('sign_out')),
           ),
         ],
       ),
@@ -152,6 +168,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildHeader(),
                     const SizedBox(height: 24),
+                    _buildAlertsWrapper(), // Smart Alerts
+                    const SizedBox(height: 24),
                     _buildPantryInsightsWrapper(), // Updated to use real data
                     const SizedBox(height: 24),
                     _buildQuickActionsGrid(),
@@ -163,14 +181,36 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
       bottomNavigationBar: _buildBottomNav(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ChatScreen()),
+          );
+        },
+        backgroundColor: AppTheme.primary,
+        child: const Icon(Icons.smart_toy_rounded, color: Colors.white),
+      ),
     );
   }
 
   Widget _buildHeader() {
+    final t = AppLocalizations.of(context);
+    final isDark = ThemeService.instance.isDarkMode;
+
+    final headerGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        AppTheme.primary.withOpacity(isDark ? 0.18 : 0.12),
+        AppTheme.surface,
+      ],
+    );
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 30),
       decoration: BoxDecoration(
-        color: AppTheme.surface,
+        gradient: headerGradient,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
@@ -180,58 +220,160 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Column(
+      child: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Positioned(
+            top: -40,
+            right: -30,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.primary.withOpacity(isDark ? 0.12 : 0.08),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -50,
+            left: -40,
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.primaryDark.withOpacity(isDark ? 0.10 : 0.06),
+              ),
+            ),
+          ),
+          Column(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Good ${DateTime.now().hour < 12 ? 'Morning' : 'Evening'},',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: AppTheme.textLight,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _userName?.split(' ').first ?? 'Chef',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      color: AppTheme.textDark,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
+              ValueListenableBuilder<UserProfile>(
+                valueListenable: UserProfileService.instance.profileNotifier,
+                builder: (context, profile, _) {
+                  final avatarImage = _avatarDecorationImage(profile.avatarBase64);
+                  final displayName = profile.fullName.trim().isNotEmpty
+                      ? profile.fullName.trim()
+                      : (_userName ?? 'Chef');
+
+                  final initial = displayName.trim().isNotEmpty
+                      ? displayName.trim()[0].toUpperCase()
+                      : 'U';
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            DateTime.now().hour < 12
+                                ? t.tr('good_morning')
+                                : t.tr('good_evening'),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppTheme.textLight,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            displayName.split(' ').first,
+                            style: TextStyle(
+                              fontSize: 28,
+                              color: AppTheme.textDark,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          InkWell(
+                            borderRadius: BorderRadius.circular(999),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ProfileScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppTheme.primaryLight.withOpacity(0.5),
+                                border: Border.all(
+                                  color: AppTheme.surface.withOpacity(0.9),
+                                  width: 2,
+                                ),
+                                image: avatarImage,
+                              ),
+                              child: avatarImage != null
+                                  ? null
+                                  : Center(
+                                      child: Text(
+                                        initial,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: ThemeService.instance.isDarkMode
+                                              ? AppTheme.primary
+                                              : AppTheme.primaryDark,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryLight.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.logout_rounded,
+                                color: AppTheme.primaryDark,
+                              ),
+                              onPressed: _handleSignOut,
+                              tooltip: t.tr('sign_out'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryLight.withOpacity(0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.logout_rounded,
-                    color: AppTheme.primaryDark,
-                  ),
-                  onPressed: _handleSignOut,
-                  tooltip: 'Sign Out',
-                ),
-              ),
+              const SizedBox(height: 24),
+              _buildSearchField(),
             ],
           ),
-          const SizedBox(height: 24),
-          _buildSearchField(),
         ],
       ),
     );
   }
 
+  DecorationImage? _avatarDecorationImage(String avatarBase64) {
+    final raw = avatarBase64.trim();
+    if (raw.isEmpty) return null;
+    try {
+      final Uint8List bytes = base64Decode(raw);
+      if (bytes.isEmpty) return null;
+      return DecorationImage(
+        image: MemoryImage(bytes),
+        fit: BoxFit.cover,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   Widget _buildSearchField() {
+    final t = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
@@ -239,13 +381,169 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
-      child: const TextField(
+      child: TextField(
         decoration: InputDecoration(
-          hintText: 'Search your pantry...',
+          hintText: t.tr('search_pantry_hint'),
           hintStyle: TextStyle(color: AppTheme.textLight),
           prefixIcon: Icon(Icons.search_rounded, color: AppTheme.textLight),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(vertical: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlertsWrapper() {
+    return ValueListenableBuilder<List<InventoryItem>>(
+      valueListenable: PantryService.instance.itemsNotifier,
+      builder: (context, items, _) {
+        final expiringItems = items
+            .where((i) => i.isExpiringSoon || i.isExpired)
+            .toList();
+
+        if (expiringItems.isEmpty) return const SizedBox.shrink();
+
+        return _buildAlertCard(expiringItems);
+      },
+    );
+  }
+
+  Widget _buildAlertCard(List<InventoryItem> expiringItems) {
+    final t = AppLocalizations.of(context);
+    final isDark = ThemeService.instance.isDarkMode;
+    final count = expiringItems.length;
+    final isPlural = count > 1;
+    final topNames = expiringItems.take(3).map((e) => e.name).toList();
+    final remaining = count - topNames.length;
+
+    final bgColor = isDark ? AppTheme.surface : Colors.orange.shade50;
+    final borderColor =
+        isDark ? Colors.orange.shade700.withOpacity(0.35) : Colors.orange.shade200;
+    final titleColor = isDark ? AppTheme.textDark : Colors.orange.shade900;
+    final bodyColor = isDark ? AppTheme.textLight : Colors.orange.shade800;
+    final chipBg = isDark ? AppTheme.background : Colors.white;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: (isDark ? Colors.black : Colors.orange).withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: chipBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.tr('action_needed'),
+                        style: TextStyle(
+                          color: titleColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        t
+                            .tr('items_expiring_soon')
+                            .replaceAll('{count}', '$count')
+                            .replaceAll('{plural}', isPlural ? 's' : ''),
+                        style: TextStyle(
+                          color: bodyColor,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                topNames.join(', ') + (remaining > 0 ? ' +$remaining more' : ''),
+                style: TextStyle(
+                  color: titleColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RecipeGenerationScreen(),
+                        ),
+                      );
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.soup_kitchen_rounded, size: 18),
+                    label: Text(t.tr('ai_chef')),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      final prompt =
+                          'I have these items expiring soon: ${topNames.join(', ')}. '
+                          'Suggest 2 quick meals to use them today and a short plan to reduce waste.';
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(initialMessage: prompt),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: titleColor,
+                      side: BorderSide(color: Colors.orange.shade300),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.smart_toy_rounded, size: 18),
+                    label: Text(t.tr('ask')),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -280,10 +578,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 24),
           child: Text(
-            'At a Glance',
+            AppLocalizations.of(context).tr('at_a_glance'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -300,21 +598,21 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             children: [
               _buildInsightCard(
-                'Total Items',
+                AppLocalizations.of(context).tr('total_items'),
                 totalItems,
                 Icons.inventory_2_outlined,
                 Colors.blue,
               ),
               const SizedBox(width: 12),
               _buildInsightCard(
-                'Expiring',
+                AppLocalizations.of(context).tr('expiring'),
                 expiringSoon,
                 Icons.warning_amber_rounded,
                 Colors.orange,
               ),
               const SizedBox(width: 12),
               _buildInsightCard(
-                'Low Stock',
+                AppLocalizations.of(context).tr('low_stock'),
                 lowStock,
                 Icons.shopping_basket_outlined,
                 Colors.red,
@@ -367,7 +665,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               color: AppTheme.textLight,
               fontWeight: FontWeight.w500,
@@ -379,13 +677,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickActionsGrid() {
+    final t = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Quick Actions',
+          Text(
+            t.tr('quick_actions'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -404,8 +703,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 childAspectRatio: 1.1,
                 children: [
                   _buildActionCard(
-                    title: 'My Pantry',
-                    subtitle: 'Manage inventory',
+                    title: t.tr('my_pantry'),
+                    subtitle: t.tr('manage_inventory'),
                     icon: Icons.kitchen_rounded,
                     color: AppTheme.primary,
                     onTap: () => Navigator.push(
@@ -414,18 +713,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   _buildActionCard(
-                    title: 'Add Items',
-                    subtitle: 'Scan or type',
+                    title: t.tr('add_items'),
+                    subtitle: t.tr('scan_or_type'),
                     icon: Icons.add_circle_outline_rounded,
-                    color: Colors.purple,
+                    color: AppTheme.primaryDark,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const AddItemScreen()),
                     ),
                   ),
                   _buildActionCard(
-                    title: 'Shopping List',
-                    subtitle: 'Plan purchases',
+                    title: t.tr('shopping_list'),
+                    subtitle: t.tr('plan_purchases'),
                     icon: Icons.checklist_rtl_rounded,
                     color: Colors.orange,
                     onTap: () => Navigator.push(
@@ -436,8 +735,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   _buildActionCard(
-                    title: 'Recipes',
-                    subtitle: 'What to cook?',
+                    title: t.tr('recipes'),
+                    subtitle: t.tr('what_to_cook'),
                     icon: Icons.restaurant_menu_rounded,
                     color: Colors.pink,
                     onTap: () => Navigator.push(
@@ -497,7 +796,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textDark,
@@ -506,7 +805,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         color: AppTheme.textLight,
                       ),
@@ -522,68 +821,87 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentActivity() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppTheme.primaryDark, AppTheme.primary],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    final t = AppLocalizations.of(context);
+    return ValueListenableBuilder<List<InventoryItem>>(
+      valueListenable: PantryService.instance.itemsNotifier,
+      builder: (context, items, _) {
+        final now = DateTime.now();
+        final expiring7 = items.where((i) {
+          final d = i.expiryDate;
+          if (d == null) return false;
+          final diff = d.difference(now).inDays;
+          return diff >= 0 && diff <= 7;
+        }).length;
+        final isPlural = expiring7 != 1;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.primaryDark, AppTheme.primary],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primary.withOpacity(0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.auto_graph_rounded, color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.tr('waste_saver'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        t
+                            .tr('waste_saver_subtitle')
+                            .replaceAll('{count}', '$expiring7')
+                            .replaceAll('{plural}', isPlural ? 's' : ''),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white70,
+                  size: 16,
+                ),
+              ],
+            ),
           ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primary.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.auto_graph_rounded, color: Colors.white),
-            ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Spending Analysis',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'You saved \$24 this week!',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: Colors.white70,
-              size: 16,
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
   Widget _buildBottomNav() {
+    final t = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surface,
@@ -601,31 +919,31 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavItem(Icons.home_rounded, 'Home', 0, false),
+              _buildNavItem(Icons.home_rounded, t.tr('home'), 0, false),
               _buildNavItem(
                 Icons.inventory_2_rounded,
-                'Pantry',
+                t.tr('pantry'),
                 1,
                 false,
                 onTap: () => _onBottomNavTapped(1),
               ),
               _buildNavItem(
                 Icons.center_focus_strong_rounded,
-                'Scan',
+                t.tr('scan'),
                 2,
                 true,
                 onTap: () => _onBottomNavTapped(2),
               ),
               _buildNavItem(
                 Icons.restaurant_rounded,
-                'Cooking',
+                t.tr('cooking'),
                 3,
                 false,
                 onTap: () => _onBottomNavTapped(3),
               ),
               _buildNavItem(
                 Icons.person_rounded,
-                'Profile',
+                t.tr('profile'),
                 4,
                 false,
                 onTap: () => _onBottomNavTapped(4),
