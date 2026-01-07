@@ -2,7 +2,7 @@
 
 Application Flutter de gestion de garde‑manger (inventaire, date d’expiration, liste de courses) avec **analyse IA d’un ticket de caisse**.
 
-## Sommaire
+## 🧭 Sommaire
 - [Objectif du projet](#objectif-du-projet)
 - [Fonctionnalités](#fonctionnalités)
 - [Architecture (vue d’ensemble)](#architecture-vue-densemble)
@@ -13,13 +13,13 @@ Application Flutter de gestion de garde‑manger (inventaire, date d’expiratio
 - [Build APK](#build-apk)
 - [Limites connues](#limites-connues)
 
-## Objectif du projet
+## 🎯 Objectif du projet
 PantryPal aide l’utilisateur à :
 - Suivre ses produits (quantité, catégorie, date d’expiration)
 - Réduire le gaspillage grâce aux statuts **expiré / bientôt expiré / frais** et aux notifications locales
 - Gagner du temps via des ajouts rapides (manuel, code‑barres, **ticket de caisse par IA**)
 
-## Fonctionnalités
+## ✨ Fonctionnalités
 - **Inventaire (Pantry)** : ajouter/supprimer, ajuster quantité, indicateurs d’expiration
 - **Ajout d’articles** :
   - Ticket (IA) : photo → extraction → écran de revue → ajout
@@ -32,7 +32,7 @@ PantryPal aide l’utilisateur à :
 - **FR/EN** (localisation)
 - **Notifications locales** (mobile) pour produits bientôt expirés
 
-## Architecture (vue d’ensemble)
+## 🧩 Architecture (vue d’ensemble)
 Schéma simplifié :
 
 ```text
@@ -52,7 +52,7 @@ Schéma simplifié :
 
 Données (inventaire, profil, paramètres) : **persistées localement** via SharedPreferences.
 
-## Frontend (Flutter)
+## 📱 Frontend (Flutter)
 ### Pré-requis
 - Flutter SDK (dans le PATH)
 - Android Studio / Android SDK (pour Android)
@@ -77,7 +77,7 @@ lib/
   widgets/   Widgets réutilisables
 ```
 
-## Backend (temporaire)
+## 🛠️ Backend (temporaire)
 Le projet utilise un **backend temporaire** pour être démontrable rapidement :
 - **Firebase Auth** (service externe) pour l’authentification
 - **IA** via API OpenAI‑compatible :
@@ -87,7 +87,7 @@ Le projet utilise un **backend temporaire** pour être démontrable rapidement :
 Important : il n’y a **pas** (pour le moment) de serveur applicatif “PantryPal” dédié (Node/Java/Python) dans ce dépôt.
 La logique métier reste côté app, et les intégrations passent par des services externes.
 
-## Configuration IA (Groq / Ollama)
+## 🤖 Configuration IA (Groq / Ollama)
 Les paramètres IA se configurent dans l’application (Profil → Paramètres IA).
 
 ### Option A — Groq (cloud)
@@ -108,20 +108,24 @@ ollama pull llama3.2
 
 Note Android émulateur : `localhost` peut viser l’émulateur. Si besoin, utiliser `10.0.2.2` (Android) ou l’IP de la machine hôte.
 
-## Tests
+## ✅ Tests
 ```bash
 flutter test
 flutter analyze
 ```
 
-## Build APK
+## 📦 Build APK
 ```bash
 flutter build apk --release
 ```
 
 Sortie : `build/app/outputs/flutter-apk/app-release.apk`
 
-## Limites connues
+## ⚠️ Limites connues
 - Les notifications locales sont prévues pour Android/iOS ; sur web certaines actions peuvent être désactivées.
 - Le “backend” est temporaire (services externes + local). Une évolution naturelle serait un backend dédié (API + base de données) pour la synchronisation multi‑appareils.
+
+---
+
+Made with Flutter • Firebase • SharedPreferences • Groq/Ollama (OpenAI‑compatible)
 
