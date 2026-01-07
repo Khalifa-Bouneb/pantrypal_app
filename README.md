@@ -1,163 +1,85 @@
-# PantryPal - AI-Powered Grocery Inventory App
+# PantryPal — application mobile de gestion de garde‑manger (Flutter)
 
-## 🎯 Overview
-PantryPal helps you track your groceries effortlessly using AI-powered receipt scanning, reducing food waste by alerting you before items expire.
+## Présentation
+PantryPal est une application Flutter qui permet de gérer son inventaire alimentaire, de réduire le gaspillage (alertes d’expiration) et d’utiliser l’IA pour analyser une photo de ticket de caisse.
 
-## ✨ Functionality 1: AI-Powered Inventory Ingestion (COMPLETED) ✅
+## Fonctionnalités
+- Inventaire / Pantry : ajout, suppression, modification des quantités, statuts **expiré / bientôt expiré / frais**
+- Ajout d’articles :
+  - **Scan ticket (IA)** : photo → extraction d’articles → écran de revue → ajout au pantry
+  - **Scan code‑barres/QR** (caméra)
+  - **Ajout manuel**
+- **Liste de courses**
+- **Planification de repas**
+- **Notifications locales** pour les produits bientôt expirés (mobile)
+- **Profil utilisateur** (dont photo de profil) + persistance locale
+- **Mode sombre**
+- **FR/EN** (localisation)
 
-### Features Implemented
+## Technologies
+- Flutter / Dart
+- Firebase (initialisation + Auth)
+- SharedPreferences (persistance locale)
+- IA via endpoint **OpenAI‑compatible** :
+  - **Groq** (par défaut)
+  - **Ollama** (option locale)
 
-#### 1. **Three Ways to Add Items**
-- **🧾 Scan Receipt** (AI-Powered)
-  - Take a photo of your grocery receipt
-  - Google Gemini AI automatically extracts all items with quantities, categories, and expiry dates
-  - Review and confirm before adding to inventory
-  - 95%+ accuracy with structured JSON parsing
-  
-- **📱 Scan Barcode/QR Code**
-  - Real-time camera scanning for product barcodes
-  - Instant product lookup and addition
-  - Flashlight toggle for low-light scanning
-  - Visual scanning guide with corner indicators
-  
-- **✏️ Add Manually** (Reliable Fallback)
-  - Full form with item name, category, quantity, unit, and expiry date
-  - 9 predefined categories with icons
-  - Date picker for expiry dates
+## Prérequis
+- Flutter SDK installé (et configuré dans le PATH)
+- Android Studio (ou autre SDK Android) pour générer un APK
+- (Optionnel) Compte Groq pour une clé API, ou Ollama installé en local
 
-#### 2. **Smart Inventory Management**
-- Items automatically grouped by status:
-  - **Expired** (red indicator)
-  - **Expiring Soon** (orange indicator - within 3 days)
-  - **Fresh** (green indicator)
-- Real-time quantity adjustment
-- Easy item deletion
-- Visual expiry indicators
+## Configuration (IA)
+Il n’y a pas de “backend” obligatoire à lancer pour l’IA : l’app appelle directement un fournisseur.
 
-## 🚀 Quick Start Commands
+### Option A — Groq (cloud)
+1. Créez une clé API Groq.
+2. Dans l’application, ouvrez **Profil / Paramètres IA** et renseignez :
+   - Base URL : `https://api.groq.com/openai/v1`
+   - API Key : `gsk_...`
+   - Modèle : ex. `llama-3.1-8b-instant`
 
-### Setup
+### Option B — Ollama (local)
+1. Installez Ollama et lancez le service.
+2. Téléchargez un modèle (exemple) : `ollama pull llama3.2`
+3. Dans l’application, configurez :
+   - Base URL : `http://localhost:11434/v1`
+   - API Key : vide
+   - Modèle : ex. `llama3.2`
 
-1. **Get Google Gemini API Key** (Required for receipt scanning)
-   ```bash
-   # Visit: https://makersuite.google.com/app/apikey
-   # Get a free API key
-   # Add it to: lib/services/gemini_service.dart (line 8)
-   static const String _apiKey = 'YOUR_API_KEY_HERE';
-   ```
+Note : sur Android **émulateur**, “localhost” peut référer à l’émulateur. Si besoin, utilisez l’IP hôte de l’ordinateur (ou `10.0.2.2` côté émulateur).
 
-2. **Install Dependencies**
-   ```bash
-   flutter pub get
-   ```
-
-### Run the app
+## Exécuter le frontend (l’app Flutter)
 ```bash
-# On Chrome (Web) - Recommended for quick testing
+flutter pub get
+
+# Web (rapide)
 flutter run -d chrome
 
-# On Android Emulator
-flutter emulators --launch <emulator_id>
+# Android (émulateur ou téléphone)
 flutter run
-
-# On Windows (requires Developer Mode enabled)
-flutter run -d windows
 ```
 
-### Testing
+## Exécuter le “backend”
+Il n’y a **pas** de serveur backend dédié dans ce dépôt.
+- Authentification : Firebase
+- IA : Groq (cloud) ou Ollama (local)
+
+Si vous choisissez Ollama, le “backend” à lancer correspond à Ollama lui‑même (service local).
+
+## Tests
 ```bash
-# Run all tests
 flutter test
-
-# Analyze code
 flutter analyze
-
-# Get dependencies
-flutter pub get
 ```
 
-## 📁 Project Structure
-
-```
-lib/
-├── models/              # Data models (GroceryItem, InventoryItem)
-├── screens/             # UI screens (Home, Receipt Scanner, Manual Add)
-├── widgets/             # Reusable widgets (BottomSheet, InventoryList)
-├── services/            # API service (mock OCR)
-└── main.dart           # App entry point
+## Générer un APK (Android)
+```bash
+flutter build apk --release
 ```
 
-## 🎨 Features Demo
+APK généré : `build/app/outputs/flutter-apk/app-release.apk`
 
-### Home Screen
-- Clean design with green theme
-- Empty state when no items
-- FAB to add items (3 options)
-- Grouped inventory by expiry status
-
-### Receipt Scanner
-- Camera integration using image_picker
-- Google Gemini AI processes receipt image
-- Extracts items with structured JSON parsing
-- Returns accurate item list with categories, quantities, and expiry dates
-
-### Barcode Scanner
-- Real-time camera view with MobileScanner
-- Detects barcodes and QR codes automatically
-- Visual scanning guide with corner indicators
-- Flashlight toggle for dark environments
-- Instant product lookup and inventory addition
-
-### Receipt Review
-- Shows all parsed items
-- Remove incorrect items
-- Category icons and colors
-- One-tap confirmation
-
-### Manual Add
-- Form with all fields
-- Category dropdown
-- Date picker for expiry
-- Input validation
-
-## 📦 Dependencies
-
-```yaml
-cupertino_icons: ^1.0.8         # iOS-style icons
-image_picker: ^1.0.7            # Camera/gallery access for receipt scanning
-http: ^1.2.0                    # API calls
-intl: ^0.19.0                   # Date formatting
-google_generative_ai: ^0.2.2    # Google Gemini AI for receipt OCR
-mobile_scanner: ^3.5.7          # Barcode and QR code scanning
-```
-
-## 🔮 Current State
-
-### ✅ What Works
-- ✅ Complete UI for all 3 add methods with gradient designs
-- ✅ Receipt scanning with Google Gemini AI (real OCR)
-- ✅ Barcode/QR code scanning with camera
-- ✅ Manual item addition with validation
-- ✅ Smart inventory grouping (Expired/Expiring/Fresh)
-- ✅ Quantity management with +/- controls
-- ✅ Item deletion with confirmation
-- ✅ Professional Material Design 3 UI
-
-### 🚧 Next Steps
-- Real product database for barcode lookups (currently mock data)
-- Data persistence with local database (SQLite/Hive)
-- Backend API for cloud sync
-- User authentication
-
-## 🎯 Next Functionalities (To Implement)
-
-2. **Smart Expiry Alerts** - Push notifications
-3. **Recipe Suggestions** - AI recipes from ingredients
-4. **Waste Tracking** - Log & analyze wasted items
-
-## 📝 Getting Started with Flutter
-
-- [Flutter Documentation](https://docs.flutter.dev/)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter Cookbook](https://docs.flutter.dev/cookbook)
+## Notes plateformes
+- Les notifications locales sont prévues pour mobile (Android/iOS). Sur web, certaines fonctions peuvent être désactivées ou no‑op selon les APIs disponibles.
 
